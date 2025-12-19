@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Test SWA</h1>
+    <button onclick="testApi()">Chiama API</button>
+    <p id="output"></p>
+
+    <script>
+        async function testApi() {
+            const res = await fetch('/api/GetDevices');
+            const data = await res.json();
+            document.getElementById('output').innerText = data.message;
+        }
+    </script>
+</body>
+</html>
