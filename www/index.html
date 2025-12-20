@@ -117,9 +117,8 @@
 
     <script>
         let myChart = null;
-        let rawHistoryData = []; // Buffer per i dati storici
+        let rawHistoryData = []; 
 
-        // 1. Carica i device univoci
         async function loadDevices() {
             const select = document.getElementById('deviceList');
             const btns = [document.getElementById('btnStats'), document.getElementById('btnChart')];
@@ -135,13 +134,12 @@
                 }
 
                 select.innerHTML = devices.map(id => `<option value="${id}">${id}</option>`).join('');
-                btns.forEach(b => b.disabled = false); // Abilita i pulsanti
+                btns.forEach(b => b.disabled = false); 
             } catch (err) {
                 select.innerHTML = '<option value="">Errore nel caricamento</option>';
             }
         }
 
-        // 2. Recupera medie e riepilogo
         async function getStats() {
             const deviceId = document.getElementById('deviceList').value;
             const resDiv = document.getElementById('result');
@@ -170,7 +168,6 @@
             }
         }
 
-        // 3. Recupera dati storici per il grafico
         async function getChartData() {
             const deviceId = document.getElementById('deviceList').value;
             const chartCont = document.getElementById('chartContainer');
@@ -188,19 +185,17 @@
             }
         }
 
-        // 4. Disegna/Aggiorna il grafico (Chart.js)
         function updateChart() {
             const ctx = document.getElementById('iotChart').getContext('2d');
             const mode = document.getElementById('viewMode').value;
             
-            // Prepariamo etichette (X) e valori (Y)
             const labels = rawHistoryData.map(d => new Date(d.timestamp).toLocaleString());
             const dataValues = rawHistoryData.map(d => d[mode]);
             
             const labelName = mode === 'temperature' ? 'Temperatura (°C)' : 'Umidità (%)';
             const color = mode === 'temperature' ? '#ff6384' : '#36a2eb';
 
-            if (myChart) myChart.destroy(); // Distruggi il vecchio grafico se esiste
+            if (myChart) myChart.destroy(); 
 
             myChart = new Chart(ctx, {
                 type: 'line',
@@ -210,23 +205,27 @@
                         label: labelName,
                         data: dataValues,
                         borderColor: color,
-                        backgroundColor: color + '33', // Colore trasparente per l'area
+                        backgroundColor: color + '33',
                         fill: true,
-                        tension: 0.3
+                        tension: 0
                     }]
                 },
                 options: {
                     responsive: true,
+                    elements: {
+                        point: {
+                            radius: 3
+                        }
+                    },
                     plugins: { legend: { position: 'top' } },
                     scales: {
-                        x: { display: false }, // Nascondiamo le etichette X se sono troppe
+                        x: { display: false }, 
                         y: { beginAtZero: false }
                     }
                 }
             });
         }
 
-        // Inizializzazione
         loadDevices();
     </script>
 </body>
