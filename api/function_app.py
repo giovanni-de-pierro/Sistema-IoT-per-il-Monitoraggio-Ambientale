@@ -26,11 +26,14 @@ def get_devices(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(json.dumps(devices), mimetype="application/json", status_code=200)
     except Exception as e:
         return func.HttpResponse(json.dumps({"error": str(e)}), status_code=500, mimetype="application/json")
-
+    
 @app.route(route="GetDeviceStats", methods=["GET"])
 def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
     try:
         device_id = req.params.get('deviceId')
+        if not device_id:
+            return func.HttpResponse("Manca deviceId", status_code=400)
+
         container = get_container()
         
         query = """
@@ -47,7 +50,13 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
         """
         
         params = [{"name": "@devId", "value": device_id}]
-        items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=True))
+        
+        items = list(container.query_items(
+            query=query, 
+            parameters=params, 
+            partition_key=device_id
+        ))
+
 
         if not items or items[0].get('cnt') == 0:
             return func.HttpResponse(json.dumps({
