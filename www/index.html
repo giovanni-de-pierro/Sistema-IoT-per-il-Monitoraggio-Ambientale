@@ -28,36 +28,21 @@
         button:hover:not(:disabled) { background-color: #1557b0; }
         button:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.6; }
         
-        /* Layout per i due grafici */
         .charts-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 20px;
-            display: none; 
+            display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; display: none; 
         }
         .chart-wrapper {
-            flex: 1;
-            min-width: 300px; 
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            border-top: 4px solid #1a73e8;
+            flex: 1; min-width: 300px; background: #f8f9fa; padding: 10px;
+            border-radius: 8px; border-top: 4px solid #1a73e8;
         }
         canvas { width: 100% !important; height: 280px !important; }
         
         #result { 
-            margin-top: 20px; 
-            background: #e8f0fe; 
-            padding: 15px; 
-            border-radius: 8px; 
-            display: none; 
-            border-left: 5px solid #1a73e8;
+            margin-top: 20px; background: #e8f0fe; padding: 15px; 
+            border-radius: 8px; display: none; border-left: 5px solid #1a73e8;
         }
         .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;
         }
         .stat-item { font-size: 0.95em; }
         .stat-item strong { color: #1a73e8; display: block; }
@@ -113,8 +98,6 @@
             try {
                 const res = await fetch(`/api/GetDeviceStats?deviceId=${deviceId}`);
                 const data = await res.json();
-                
-                // Formattiamo le date per una lettura migliore
                 const firstDate = data.minTS ? new Date(data.minTS).toLocaleString() : 'N/D';
                 const lastDate = data.maxTS ? new Date(data.maxTS).toLocaleString() : 'N/D';
 
@@ -127,7 +110,7 @@
                         <div class="stat-item"><strong>Ultimo Messaggio</strong>${lastDate}</div>
                     </div>
                 `;
-            } catch (err) { resDiv.innerHTML = "Errore nel caricamento delle statistiche."; }
+            } catch (err) { resDiv.innerHTML = "Errore statistiche."; }
         }
 
         async function getChartData() {
@@ -137,7 +120,7 @@
                 const res = await fetch(`/api/GetDeviceHistory?deviceId=${deviceId}`);
                 rawHistoryData = await res.json();
                 createCharts();
-            } catch (err) { alert("Errore nel recupero dei dati storici."); }
+            } catch (err) { alert("Errore dati."); }
         }
 
         function createCharts() {
@@ -156,6 +139,7 @@
                 plugins: { 
                     legend: { display: true, position: 'top' },
                     tooltip: {
+                        enabled: true,
                         callbacks: {
                             afterBody: function(items) {
                                 const index = items[0].dataIndex;
@@ -167,6 +151,15 @@
                 scales: { x: { display: false }, y: { beginAtZero: false } },
                 onHover: (event, chartElement, chart) => {
                     syncCharts(chart, event);
+                },
+                // NUOVO: Nasconde il tooltip quando il mouse esce dal grafico
+                onLeave: (event, chartElement, chart) => {
+                    const otherChart = (chart === chartTemp) ? chartHum : chartTemp;
+                    if (otherChart) {
+                        otherChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                        otherChart.setActiveElements([]);
+                        otherChart.update();
+                    }
                 }
             };
 
@@ -175,16 +168,7 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ 
-                        label: 'Temperatura (°C)', 
-                        data: temps, 
-                        borderColor: '#ff6384', 
-                        backgroundColor: '#ff638422', 
-                        fill: true, 
-                        tension: 0, 
-                        pointRadius: 5, 
-                        pointHitRadius: 10 
-                    }]
+                    datasets: [{ label: 'Temperatura (°C)', data: temps, borderColor: '#ff6384', backgroundColor: '#ff638422', fill: true, tension: 0, pointRadius: 4, pointHitRadius: 20 }]
                 },
                 options: commonOptions
             });
@@ -194,16 +178,7 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ 
-                        label: 'Umidità (%)', 
-                        data: hums, 
-                        borderColor: '#36a2eb', 
-                        backgroundColor: '#36a2eb22', 
-                        fill: true, 
-                        tension: 0, 
-                        pointRadius: 5, 
-                        pointHitRadius: 10 
-                    }]
+                    datasets: [{ label: 'Umidità (%)', data: hums, borderColor: '#36a2eb', backgroundColor: '#36a2eb22', fill: true, tension: 0, pointRadius: 4, pointHitRadius: 20 }]
                 },
                 options: commonOptions
             });
@@ -212,13 +187,19 @@
         function syncCharts(sourceChart, event) {
             const otherChart = (sourceChart === chartTemp) ? chartHum : chartTemp;
             if (!otherChart) return;
+
             const points = sourceChart.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
+            
             if (points.length > 0) {
                 const index = points[0].index;
                 otherChart.tooltip.setActiveElements([{ datasetIndex: 0, index: index }], { x: 0, y: 0 });
                 otherChart.setActiveElements([{ datasetIndex: 0, index: index }]);
-                otherChart.update();
+            } else {
+                // Se non ci sono punti sotto il mouse nel grafico sorgente, pulisce l'altro
+                otherChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                otherChart.setActiveElements([]);
             }
+            otherChart.update();
         }
 
         loadDevices();
