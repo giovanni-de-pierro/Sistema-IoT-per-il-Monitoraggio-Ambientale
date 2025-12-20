@@ -76,3 +76,4 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
 
     except Exception as e:
         return func.HttpResponse(json.dumps({"error": str(e)}), status_code=500)
+    
