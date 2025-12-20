@@ -34,13 +34,12 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
         container = get_container()
         
         query = """
-        SELECT VALUE {
-            "avgTemp": AVG(c.temperature), 
-            "avgHum": AVG(c.humidity), 
-            "minTS": MIN(c.timestamp), 
-            "maxTS": MAX(c.timestamp),
-            "cnt": COUNT(1)
-        }
+        SELECT 
+            AVG(c.temperature) as avgTemp, 
+            AVG(c.humidity) as avgHum, 
+            MIN(c.timestamp) as minTS, 
+            MAX(c.timestamp) as maxTS,
+            COUNT(1) as cnt
         FROM c WHERE c.deviceId = @devId
         """
         
@@ -54,14 +53,14 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
 
         res = items[0]
         
-        return func.HttpResponse(
-            json.dumps({
-                "avgTemp": float(res.get('avgTemp') or 0),
-                "avgHum": float(res.get('avgHum') or 0),
-                "minTS": str(res.get('minTS') or "N/A"),
-                "maxTS": str(res.get('maxTS') or "N/A")
-            }),
-            mimetype="application/json"
-        )
+        result = {
+            "avgTemp": float(res.get('avgTemp') or 0),
+            "avgHum": float(res.get('avgHum') or 0),
+            "minTS": str(res.get('minTS') or "N/A"),
+            "maxTS": str(res.get('maxTS') or "N/A")
+        }
+        
+        return func.HttpResponse(json.dumps(result), mimetype="application/json")
+
     except Exception as e:
         return func.HttpResponse(json.dumps({"error": str(e)}), status_code=500)
