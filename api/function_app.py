@@ -31,43 +31,17 @@ def get_devices(req: func.HttpRequest) -> func.HttpResponse:
 def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
     try:
         device_id = req.params.get('deviceId')
-        if not device_id:
-            return func.HttpResponse("Parametro deviceId mancante", status_code=400)
-
         container = get_container()
-
-        query = "SELECT TOP 1 c.temperature, c.humidity, c.deviceId FROM c WHERE c.deviceId = @devId ORDER BY c._ts DESC"
+        
+        query = "SELECT TOP 1 * FROM c WHERE c.deviceId = @devId"
         params = [{"name": "@devId", "value": device_id}]
         
         items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=True))
+        
+        if not items:
+            return func.HttpResponse(json.dumps({"msg": "Nessun dato trovato per questo ID"}), status_code=404)
 
-        if not items or items[0].get('cnt') == 0:
-            return func.HttpResponse(
-                json.dumps({"error": "Nessun dato trovato per questo ID", "id_cercato": device_id}), 
-                status_code=404, 
-                mimetype="application/json"
-            )
-
-        stats = items[0]
-        temp = stats.get('avgTemp')
-        hum = stats.get('avgHum')
-
-        response_data = {
-            "deviceId": device_id,
-            "avgTemp": round(float(temp), 2) if temp is not None else 0,
-            "avgHum": round(float(hum), 2) if hum is not None else 0,
-            "count": stats.get('cnt')
-        }
-
-        return func.HttpResponse(
-            json.dumps(response_data),
-            mimetype="application/json",
-            status_code=200
-        )
-
+        return func.HttpResponse(json.dumps(items[0]), mimetype="application/json")
+        
     except Exception as e:
-        return func.HttpResponse(
-            json.dumps({"Dettaglio_Errore_Python": str(e)}), 
-            status_code=500, 
-            mimetype="application/json"
-        )
+        return func.HttpResponse(json.dumps({"DEBUG_CRASH": str(e)}), status_code=500)
