@@ -36,14 +36,7 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
 
         container = get_container()
 
-        query = """
-        SELECT 
-            AVG(c.temperature) as avgTemp, 
-            AVG(c.humidity) as avgHum, 
-            COUNT(1) as cnt 
-        FROM c 
-        WHERE c.deviceId = @devId
-        """
+        query = "SELECT TOP 1 c.temperature, c.humidity, c.deviceId FROM c WHERE c.deviceId = @devId ORDER BY c._ts DESC"
         params = [{"name": "@devId", "value": device_id}]
         
         items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=True))
