@@ -34,13 +34,16 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
         container = get_container()
         
         query = """
-        SELECT 
-            AVG(c.temperature) as avgTemp, 
-            AVG(c.humidity) as avgHum, 
-            MIN(c.timestamp) as minTS, 
-            MAX(c.timestamp) as maxTS,
-            COUNT(1) as cnt
-        FROM c WHERE c.deviceId = @devId
+            SELECT 
+                c.deviceId,
+                AVG(c.temperature) as avgTemp, 
+                AVG(c.humidity) as avgHum, 
+                MIN(c.timestamp) as minTS, 
+                MAX(c.timestamp) as maxTS,
+                COUNT(1) as cnt
+            FROM c 
+            WHERE c.deviceId = @devId
+            GROUP BY c.deviceId
         """
         
         params = [{"name": "@devId", "value": device_id}]
