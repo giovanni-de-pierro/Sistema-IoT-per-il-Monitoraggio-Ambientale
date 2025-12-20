@@ -31,17 +31,38 @@ def get_devices(req: func.HttpRequest) -> func.HttpResponse:
 def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
     try:
         device_id = req.params.get('deviceId')
+        if not device_id:
+            return func.HttpResponse(json.dumps({"error": "Manca deviceId"}), status_code=400)
+
         container = get_container()
         
-        query = "SELECT TOP 1 * FROM c WHERE c.deviceId = @devId"
+        query = """
+        SELECT 
+            AVG(c.temperature) as avgTemp, 
+            AVG(c.humidity) as avgHum, 
+            MIN(c.timestamp) as minTS, 
+            MAX(c.timestamp) as maxTS,
+            COUNT(1) as cnt
+        FROM c WHERE c.deviceId = @devId
+        """
         params = [{"name": "@devId", "value": device_id}]
-        
         items = list(container.query_items(query=query, parameters=params, enable_cross_partition_query=True))
-        
-        if not items:
-            return func.HttpResponse(json.dumps({"msg": "Nessun dato trovato per questo ID"}), status_code=404)
 
-        return func.HttpResponse(json.dumps(items[0]), mimetype="application/json")
+        if not items or items[0].get('cnt') == 0:
+            return func.HttpResponse(json.dumps({
+                "avgTemp": 0, "avgHum": 0, "minTS": "Nessun dato", "maxTS": "Nessun dato"
+            }), mimetype="application/json")
+
+        res = items[0]
         
+        return func.HttpResponse(
+            json.dumps({
+                "avgTemp": float(res.get('avgTemp') or 0),
+                "avgHum": float(res.get('avgHum') or 0),
+                "minTS": str(res.get('minTS') or "N/A"),
+                "maxTS": str(res.get('maxTS') or "N/A")
+            }),
+            mimetype="application/json"
+        )
     except Exception as e:
-        return func.HttpResponse(json.dumps({"DEBUG_CRASH": str(e)}), status_code=500)
+        return func.HttpResponse(json.dumps({"error": str(e)}), status_code=500)

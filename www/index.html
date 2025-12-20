@@ -2,61 +2,135 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoraggio IoT Cosmos DB</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; max-width: 400px; }
-        select, button { padding: 10px; margin: 10px 0; width: 100%; }
-        #result { margin-top: 20px; background: #f4f4f4; padding: 15px; border-radius: 5px; display: none; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            line-height: 1.6; 
+            background-color: #f0f2f5;
+        }
+        .card { 
+            background: white;
+            border: none; 
+            padding: 25px; 
+            border-radius: 12px; 
+            max-width: 450px; 
+            margin: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 { color: #1a73e8; margin-top: 0; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        select, button { 
+            padding: 12px; 
+            margin: 10px 0; 
+            width: 100%; 
+            border-radius: 8px; 
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button { 
+            background-color: #1a73e8; 
+            color: white; 
+            border: none; 
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #1557b0; }
+        #result { 
+            margin-top: 20px; 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            display: none; 
+            border-left: 5px solid #1a73e8;
+        }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .timestamp { font-size: 0.85em; color: #666; }
     </style>
 </head>
 <body>
+
     <div class="card">
         <h2>Device Dashboard</h2>
+        
         <label for="deviceList">Seleziona un dispositivo:</label>
         <select id="deviceList">
-            <option>Caricamento dispositivi...</option>
+            <option value="">Caricamento dispositivi...</option>
         </select>
+        
         <button onclick="getStats()">Ottieni Statistiche</button>
 
         <div id="result"></div>
     </div>
 
     <script>
-        // Carica i device al caricamento della pagina
+        // Carica la lista dei device univoci all'avvio
         async function loadDevices() {
             try {
                 const res = await fetch('/api/GetDevices');
+                if (!res.ok) throw new Error("Errore API");
+                
                 const devices = await res.json();
                 const select = document.getElementById('deviceList');
-                select.innerHTML = devices.map(id => `<option value="${id}">${id}</option>`).join('');
+                
+                if (devices.length === 0) {
+                    select.innerHTML = '<option>Nessun device trovato</option>';
+                    return;
+                }
+
+                select.innerHTML = devices.map(id => 
+                    `<option value="${id}">${id}</option>`
+                ).join('');
             } catch (err) {
                 console.error("Errore caricamento device:", err);
+                document.getElementById('deviceList').innerHTML = '<option>Errore nel caricamento</option>';
             }
         }
 
+        // Recupera le medie e i timestamp dal backend Python
         async function getStats() {
             const deviceId = document.getElementById('deviceList').value;
             const resDiv = document.getElementById('result');
+            
+            if (!deviceId) return;
+
             resDiv.style.display = 'block';
-            resDiv.innerHTML = "Calcolo in corso...";
+            resDiv.innerHTML = "<em>Recupero dati in corso...</em>";
 
             try {
                 const res = await fetch(`/api/GetDeviceStats?deviceId=${deviceId}`);
                 const data = await res.json();
 
+                if (data.error || data.error_python) {
+                    resDiv.innerHTML = `<p style="color:red">Errore: ${data.error || data.error_python}</p>`;
+                    return;
+                }
+
+                // Verifichiamo che i dati siano numeri prima di usare toFixed
+                const temp = typeof data.avgTemp === 'number' ? data.avgTemp.toFixed(2) : "N/D";
+                const hum = typeof data.avgHum === 'number' ? data.avgHum.toFixed(2) : "N/D";
+
                 resDiv.innerHTML = `
                     <h3>Statistiche per ${deviceId}</h3>
-                    <p><strong>Media Temp:</strong> ${data.avgTemp.toFixed(2)}°C</p>
-                    <p><strong>Media Umidità:</strong> ${data.avgHum.toFixed(2)}%</p>
-                    <p><strong>Primo segnale:</strong> <br><small>${data.minTS}</small></p>
-                    <p><strong>Ultimo segnale:</strong> <br><small>${data.maxTS}</small></p>
+                    <div class="stat-row">
+                        <span><strong>Media Temp:</strong></span>
+                        <span>${temp}°C</span>
+                    </div>
+                    <div class="stat-row">
+                        <span><strong>Media Umidità:</strong></span>
+                        <span>${hum}%</span>
+                    </div>
+                    <p class="timestamp"><strong>Primo segnale:</strong><br>${data.minTS || 'N/A'}</p>
+                    <p class="timestamp"><strong>Ultimo segnale:</strong><br>${data.maxTS || 'N/A'}</p>
                 `;
             } catch (err) {
-                resDiv.innerHTML = "Errore nel recupero dati.";
+                resDiv.innerHTML = `<p style="color:red">Errore di comunicazione con l'API.</p>`;
             }
         }
 
+        // Avvio automatico
         loadDevices();
     </script>
 </body>
