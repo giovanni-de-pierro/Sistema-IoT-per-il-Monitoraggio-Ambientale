@@ -105,9 +105,9 @@
                     <div class="stat-grid">
                         <div class="stat-item"><strong>Media Temp</strong>${data.avgTemp.toFixed(1)}°C</div>
                         <div class="stat-item"><strong>Media Umidità</strong>${data.avgHum.toFixed(1)}%</div>
-                        <div class="stat-item"><strong>Totale Messaggi</strong>${data.count}</div>
                         <div class="stat-item"><strong>Primo Messaggio</strong>${firstDate}</div>
                         <div class="stat-item"><strong>Ultimo Messaggio</strong>${lastDate}</div>
+                        <div class="stat-item"><strong>Totale Messaggi</strong>${data.count}</div>
                     </div>
                 `;
             } catch (err) { resDiv.innerHTML = "Errore statistiche."; }
