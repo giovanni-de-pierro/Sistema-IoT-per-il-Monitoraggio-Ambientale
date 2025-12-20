@@ -150,27 +150,30 @@
                 },
                 scales: { x: { display: false }, y: { beginAtZero: false } },
                 
-                // Gestione Hover per sincronizzare l'attivazione
                 onHover: (event, chartElement, chart) => {
                     syncCharts(chart, event);
                 },
                 
-                // Gestione Leave per pulire entrambi i grafici
                 onLeave: (event, chartElement, chart) => {
-                    const otherChart = (chart === chartTemp) ? chartHum : chartTemp;
-                    
-                    // Reset grafico attuale
-                    chart.setActiveElements([]);
-                    chart.tooltip.setActiveElements([], { x: 0, y: 0 });
-                    chart.update();
-
-                    // Reset altro grafico
-                    if (otherChart) {
-                        otherChart.setActiveElements([]);
-                        otherChart.tooltip.setActiveElements([], { x: 0, y: 0 });
-                        otherChart.update();
-                    }
+                    // Quando il mouse esce, resettiamo entrambi i grafici
+                    [chartTemp, chartHum].forEach(c => {
+                        if (c) {
+                            c.setActiveElements([]);
+                            c.tooltip.setActiveElements([], { x: 0, y: 0 });
+                            c.update();
+                        }
+                    });
                 }
+            };
+
+            const datasetBase = {
+                fill: true,
+                tension: 0.2,
+                pointRadius: 2,           // Pallino normale piccolo
+                pointHoverRadius: 8,      // Pallino evidenziato grande
+                pointHoverBorderWidth: 3,
+                pointHoverBackgroundColor: '#ffffff', // Centro bianco per visibilità
+                pointHitRadius: 20
             };
 
             const ctxT = document.getElementById('tempChart').getContext('2d');
@@ -178,7 +181,13 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Temperatura (°C)', data: temps, borderColor: '#ff6384', backgroundColor: '#ff638422', fill: true, tension: 0, pointRadius: 4, pointHoverRadius: 8, pointHoverBorderWidth: 5, pointHitRadius: 10 }]
+                    datasets: [{ 
+                        ...datasetBase,
+                        label: 'Temperatura (°C)', 
+                        data: temps, 
+                        borderColor: '#ff6384', 
+                        backgroundColor: '#ff638422'
+                    }]
                 },
                 options: commonOptions
             });
@@ -188,7 +197,13 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Umidità (%)', data: hums, borderColor: '#36a2eb', backgroundColor: '#36a2eb22', fill: true, tension: 0, pointRadius: 4, pointHoverRadius: 8, pointHoverBorderWidth: 5, pointHitRadius: 10 }]
+                    datasets: [{ 
+                        ...datasetBase,
+                        label: 'Umidità (%)', 
+                        data: hums, 
+                        borderColor: '#36a2eb', 
+                        backgroundColor: '#36a2eb22'
+                    }]
                 },
                 options: commonOptions
             });
@@ -202,11 +217,9 @@
             
             if (points.length > 0) {
                 const index = points[0].index;
-                // Attiva punto e tooltip sull'altro grafico
                 otherChart.setActiveElements([{ datasetIndex: 0, index: index }]);
                 otherChart.tooltip.setActiveElements([{ datasetIndex: 0, index: index }], { x: 0, y: 0 });
             } else {
-                // Pulisce se il mouse non è sopra un punto
                 otherChart.setActiveElements([]);
                 otherChart.tooltip.setActiveElements([], { x: 0, y: 0 });
             }
