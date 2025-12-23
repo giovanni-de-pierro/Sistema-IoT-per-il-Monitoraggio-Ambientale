@@ -54,7 +54,7 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
         items = list(container.query_items(
             query=query, 
             parameters=params, 
- enable_cross_partition_query=True
+            partition_key=device_id
         ))
 
 
@@ -96,7 +96,7 @@ def get_device_history(req: func.HttpRequest) -> func.HttpResponse:
             parameters=params, 
             partition_key=device_id
         ))
-        
+                
         return func.HttpResponse(json.dumps(items), mimetype="application/json")
     except Exception as e:
         return func.HttpResponse(json.dumps({"error": str(e)}), status_code=500)
