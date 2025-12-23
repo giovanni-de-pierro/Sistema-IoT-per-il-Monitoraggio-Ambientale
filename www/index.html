@@ -159,7 +159,7 @@
                             callbacks: {
                                 afterBody: function(items) {
                                     const index = items[0].dataIndex;
-                                    return `Temp: ${temps[index].toFixed(3)}°C\nUmid: ${hums[index].toFixed(3)}%`;
+                                    return `Umidità (%): ${hums[index].toFixed(3)}`;
                                 }
                             }
                         }
@@ -183,7 +183,7 @@
                             callbacks: {
                                 afterBody: function(items) {
                                     const index = items[0].dataIndex;
-                                    return `Umid: ${hums[index].toFixed(3)}%\nTemp: ${temps[index].toFixed(3)}°C`;
+                                    return `Temperatura (°C): ${temps[index].toFixed(3)}`;
                                 }
                             }
                         }
