@@ -46,6 +46,7 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
                 COUNT(1) as cnt
             FROM c 
             WHERE c.deviceId = @devId
+            GROUP BY c.deviceId
         """
         
         params = [{"name": "@devId", "value": device_id}]
@@ -53,7 +54,7 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
         items = list(container.query_items(
             query=query, 
             parameters=params, 
-            partition_key=device_id
+ enable_cross_partition_query=True
         ))
 
 
