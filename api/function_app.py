@@ -2,8 +2,20 @@ import azure.functions as func
 import os
 import json
 from azure.cosmos import CosmosClient
+import base64
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+
+def is_admin(req: func.HttpRequest) -> bool:
+    client_principal_b64 = req.headers.get('x-ms-client-principal')
+    if not client_principal_b64:
+        return False
+    
+    client_principal_json = base64.b64decode(client_principal_b64).decode('utf-8')
+    user_data = json.loads(client_principal_json)
+    
+    roles = user_data.get('userRoles', [])
+    return 'admin' in roles
 
 def get_container():
     conn_str = os.environ.get("CosmosDBConnectionString")
@@ -18,6 +30,9 @@ def get_container():
 
 @app.route(route="GetDevices", methods=["GET"])
 def get_devices(req: func.HttpRequest) -> func.HttpResponse:
+    if not is_admin(req):
+        return func.HttpResponse(json.dumps({"error": "Accesso negato: Solo gli admin possono vedere i dispositivi"}), status_code=403, mimetype="application/json")
+    
     try:
         container = get_container()
         query = "SELECT DISTINCT c.deviceId FROM c"
@@ -29,6 +44,9 @@ def get_devices(req: func.HttpRequest) -> func.HttpResponse:
     
 @app.route(route="GetDeviceStats", methods=["GET"])
 def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
+    if not is_admin(req):
+        return func.HttpResponse(json.dumps({"error": "Accesso negato: Solo gli admin possono vedere i dispositivi"}), status_code=403, mimetype="application/json")
+    
     try:
         device_id = req.params.get('deviceId')
         if not device_id:
@@ -81,6 +99,9 @@ def get_device_stats(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="GetDeviceHistory", methods=["GET"])
 def get_device_history(req: func.HttpRequest) -> func.HttpResponse:
+    if not is_admin(req):
+        return func.HttpResponse(json.dumps({"error": "Accesso negato: Solo gli admin possono vedere i dispositivi"}), status_code=403, mimetype="application/json")
+    
     try:
         device_id = req.params.get('deviceId')
         if not device_id:
